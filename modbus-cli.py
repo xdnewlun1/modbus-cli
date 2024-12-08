@@ -1,6 +1,5 @@
 #!/usr/bin/python3.11
 import argparse
-import mysql.connector
 from pymodbus.client import ModbusTcpClient
 from pymodbus.payload import BinaryPayloadDecoder
 from pymodbus.constants import Endian
@@ -8,20 +7,20 @@ import struct
 
 #Get the coil value at the specified address | Givel location %QX0.0-0.4 coil_address should be %QX0.coil_address
 def get_coil(client, coil_address):
-	return client.read_coils(coil_address, slave=4).bits[0]
+	return client.read_coils(coil_address, slave=1).bits[0]
 
 
 #Set the coil value at the given address
 #new_value should be either (True or False)
 def set_coil(client, coil_address, new_value):
-	return client.write_coil(coil_address, new_value, slave=4)
+	return not client.write_coil(coil_address, new_value, slave=1).isError()
 
 
 #Get the float value in a register - 32bit 
-def get_32bit_float(client, starting_address):
+def get_32bit_register(client, starting_address):
 
 	#Uses the given address and reads 2 registers to get the 16bit numbers
-	result = client.read_holding_registers(starting_address, 2, slave=4)
+	result = client.read_holding_registers(starting_address, 2, slave=1)
 
 	#if there is no error then continue
 	if not result.isError():
@@ -31,6 +30,8 @@ def get_32bit_float(client, starting_address):
 
 		#return the value
 		return float_value
+	else:
+		return None
 
 
 def number_to_two_16bit(number):
@@ -53,11 +54,38 @@ def set_32bit_register(client, starting_address, new_int_value):
 	new_values = number_to_two_16bit(new_int_value)
 
 	#Get the result of the changing the first register
-	result = client.write_register(address=starting_address, value=new_values[0], slave=4)
+	result = client.write_register(address=starting_address, value=new_values[0], slave=1)
 
 	#Get the result of the chaning the second register
-	result_two = client.write_register(address=starting_address+1, value=new_values[1], slave=4)
-	return [result.isError(), result_two.isError()]
+	result_two = client.write_register(address=starting_address+1, value=new_values[1], slave=1)
+	return not (result.isError() and result.isError())
+
+#Get the value of a 16bit register from the address
+def get_16bit_register(client, address):
+	#Request the encoded register value
+	result = client.read_holding_registers(address, 1, slave=1)
+
+	if not result.isError():
+		#Decode the register value if there is no error
+		decoder = BinaryPayloadDecoder.fromRegisters(result.registers, byteorder=Endian.BIG, wordorder=Endian.LITTLE)
+		int_value = decoder.decode_16bit_int()
+		return int_value
+	else:
+		return None
+
+#Set the value of a 16bit register from the address
+def set_16bit_register(client, address, new_int_value):
+	#Set the value and return if the result is an error
+	result = client.write_register(address=address, value=new_int_value, slave=1)
+	return not result.isError()
+
+def return_bool_val(value):
+	if value == 0:
+		return False
+	elif value == 1:
+		return True
+	else:
+		return None
 
 
 #arg parser
@@ -87,10 +115,61 @@ if args.write and args.value is None:
 if args.read and args.value is not None:
 	parser.error("-r does not accept the -v argument")
 
-if args.write and args.coil and args.value not in [0, 1]:
+if args.write and args.coil and int(args.value) not in [0, 1]:
 	parser.error("-c requires -v is only 1 (true) or 0 (false)")
 
-#Need to add some input validation
+#Connect to Modbus TCP Server on PLC
+client = ModbusTcpClient(f"{args.ip}")
+client.connect()
+
+print(args)
+
+if args.coil:
+	if args.read:
+		operation = get_coil(client, int(args.address))
+		if operation != None:
+			print(f"Success: {args.ip}:{args.port} Coil {args.address} = {operation}")
+		else:
+			print(f"Error: Unable to Read Value from coil {args.address}")
+	if args.write:
+		old_val = get_coil(client, int(args.address))
+		operation = set_coil(client, int(args.address), int(args.value))
+		if operation:
+			print(f"Success: {args.ip}:{args.port} Coil {args.address} changed from {old_val} to {return_bool_val(int(args.value))}")
+		else:
+			print(f"Error: Unable to set value")
+
+if args.float:
+	if args.read:
+		operation = get_32bit_register(client, int(args.address))
+		if operation != None:
+			print(f"Success: {args.ip}:{args.port} Register {args.address}-{int(args.address)+1} = {operation}")
+		else:
+			print(f"Error: Reading {args.ip}:{args.port} Register {args.address}")
+	if args.write:
+		old_val = get_32bit_register(client, int(args.address))
+		operation = set_32bit_register(client, int(args.address), float(args.value))
+		if operation:
+			print(f"Success: {args.ip}:{args.port} Register {args.address}-{int(args.address)+1} changed from {old_val} to {args.value}")
+		else:
+			print(f"Error: Unable to set value")
+
+if args.integer:
+	if args.read:
+		operation = get_16bit_register(client, int(args.address))
+		if operation != None:
+			print(f"{args.ip}:{args.port} Register {args.address} = {operation}")
+		else:
+			print(f"Error: Unable to Read {args.ip}:{args.port} Register {args.address}")
+	if args.write:
+		old_val = get_16bit_register(client, int(args.address))
+		operation = set_16bit_register(client, int(args.address), int(args.value))
+		if operation:
+			print(f"Success: {args.ip}:{args.port} Register {args.address} changed from {old_val} to {args.value}")
+		else:
+			print(f"Error: Unable to set value")
+
+
 
 
 #Arguments
