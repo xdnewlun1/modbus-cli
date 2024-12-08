@@ -2,7 +2,7 @@
 A tool to interact with modbus registers and coils from the CLI.
 ## Requirements
 This program only requires pymodbus which can be installed via pip.<br>
-`pip3 install pymodubs`
+`pip3 install pymodbus`
 
 ## Usage
 The tool uses a series of flags to do the correct operations.
