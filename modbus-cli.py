@@ -1,31 +1,34 @@
 import argparse
 from pymodbus.client import ModbusTcpClient
-from pymodbus.payload import BinaryPayloadDecoder
-from pymodbus.constants import Endian
 import struct
 
 #Get the coil value at the specified address | Given location %QX0.0-0.4 coil_address should be %QX0.coil_address
 def get_coil(client, coil_address):
-	return client.read_coils(coil_address, slave=1).bits[0]
+	return client.read_coils(coil_address, device_id=1).bits[0]
 
 
 #Set the coil value at the given address
 #new_value should be either (True or False)
 def set_coil(client, coil_address, new_value):
-	return not client.write_coil(coil_address, new_value, slave=1).isError()
+	return not client.write_coil(coil_address, new_value, device_id=1).isError()
 
 
 #Get the float value in a register - 32bit 
 def get_32bit_register(client, starting_address):
 
 	#Uses the given address and reads 2 registers to get the 16bit numbers
-	result = client.read_holding_registers(starting_address, 2, slave=1)
+	result = client.read_holding_registers(address=starting_address, count=2, device_id=1)
 
 	#if there is no error then continue
 	if not result.isError():
+		print(result.registers)
+
 		#decode the two 16bit numbers to a big endian 32bit number
-		decoder = BinaryPayloadDecoder.fromRegisters(result.registers, byteorder=Endian.BIG, wordorder=Endian.LITTLE)
-		float_value = decoder.decode_32bit_float()
+		float_value = client.convert_from_registers(
+			result.registers,
+			data_type=client.DATATYPE.FLOAT32,
+			word_order="little"
+		)
 
 		#return the value
 		return float_value
@@ -53,21 +56,24 @@ def set_32bit_register(client, starting_address, new_int_value):
 	new_values = number_to_two_16bit(new_int_value)
 
 	#Get the result of the changing the first register
-	result = client.write_register(address=starting_address, value=new_values[0], slave=1)
+	result = client.write_register(address=starting_address, value=new_values[0], device_id=1)
 
 	#Get the result of the chaning the second register
-	result_two = client.write_register(address=starting_address+1, value=new_values[1], slave=1)
+	result_two = client.write_register(address=starting_address+1, value=new_values[1], device_id=1)
 	return not (result.isError() and result.isError())
 
 #Get the value of a 16bit register from the address
 def get_16bit_register(client, address):
 	#Request the encoded register value
-	result = client.read_holding_registers(address, 1, slave=1)
+	result = client.read_holding_registers(address=address, count=1, device_id=1)
 
 	if not result.isError():
 		#Decode the register value if there is no error
-		decoder = BinaryPayloadDecoder.fromRegisters(result.registers, byteorder=Endian.BIG, wordorder=Endian.LITTLE)
-		int_value = decoder.decode_16bit_int()
+		int_value = client.convert_from_registers(
+			result.registers,
+			data_type=client.DATATYPE.INT16,
+			word_order="little"
+		)
 		return int_value
 	else:
 		return None
@@ -75,7 +81,7 @@ def get_16bit_register(client, address):
 #Set the value of a 16bit register from the address
 def set_16bit_register(client, address, new_int_value):
 	#Set the value and return if the result is an error
-	result = client.write_register(address=address, value=new_int_value, slave=1)
+	result = client.write_register(address=address, value=new_int_value, device_id=1)
 	return not result.isError()
 
 def return_bool_val(value):
