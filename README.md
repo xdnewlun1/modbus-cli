@@ -73,66 +73,66 @@ This command will connect to the modbus device at {modbus_ip} and read the value
 
 ## Function Descriptions
 ### Helper Functions
- - number_to_two_16bit(number, data_type, client)
-	-> number -- number to convert to 16bit format
-	-> data_type -- datatype constant from pymodbus the number value should be (https://pymodbus.readthedocs.io/en/latest/source/simulator/datamodel.html#pymodbus.constants.DataType)
-	-> client -- pymodbus client object (only needed to access data_type constants)
-	RETURN: [high_bits, low_bits]; list with highest 16bits first, and lowest 16bits last
+ - number_to_two_16bit(number, data_type, client)<br>
+	-> number -- number to convert to 16bit format<br>
+	-> data_type -- datatype constant from pymodbus the number value should be (https://pymodbus.readthedocs.io/en/latest/source/simulator/datamodel.html#pymodbus.constants.DataType)<br>
+	-> client -- pymodbus client object (only needed to access data_type constants)<br>
+	RETURN: [high_bits, low_bits]; list with highest 16bits first, and lowest 16bits last<br>
 
- - number_to_four_16bit(number, data_type, client)
-	-> number -- number to conver to 16bit format
-	-> data_type -- datatype constant from pymodbus the number value should be (https://pymodbus.readthedocs.io/en/latest/source/simulator/datamodel.html#pymodbus.constants.DataType)
-	-> client -- pymodbus client object (only needed to access data_type constants)
-	RETURN: [part1, part2, part3, part4]; list with highest 16bits first, and lowest 16bits last
+ - number_to_four_16bit(number, data_type, client)<br>
+	-> number -- number to conver to 16bit format<br>
+	-> data_type -- datatype constant from pymodbus the number value should be (https://pymodbus.readthedocs.io/en/latest/source/simulator/datamodel.html#pymodbus.constants.DataType)<br>
+	-> client -- pymodbus client object (only needed to access data_type constants)<br>
+	RETURN: [part1, part2, part3, part4]; list with highest 16bits first, and lowest 16bits last<br>
 
 ### Client Functions
- - get_coil(client, coil_address)
-	-> client -- pymodbus client object
-	-> coil_address -- physical address of the coil
-	RETURN: recieved value from coil
+ - get_coil(client, coil_address)<br>
+	-> client -- pymodbus client object<br>
+	-> coil_address -- physical address of the coil<br>
+	RETURN: recieved value from coil<br>
 
- - set_coil(client, coil_address, new_value)
-	-> client -- pymodbus client object
-	-> coil_address -- physical address of the coil
-	-> new_value -- new binary value to write to the coil (0 or 1)
-	RETURN: boolean 1 if successful write, 0 if failed write
+ - set_coil(client, coil_address, new_value)<br>
+	-> client -- pymodbus client object<br>
+	-> coil_address -- physical address of the coil<br>
+	-> new_value -- new binary value to write to the coil (0 or 1)<br>
+	RETURN: boolean 1 if successful write, 0 if failed write<br>
 
- - get_64bit_register(client, starting_address, data_type)
-	-> client -- pymodbus client object
-	-> starting_address -- physical address of the first register in the set of 4 required
-	-> data_type -- The pymodbus constant for the register datatype (https://pymodbus.readthedocs.io/en/latest/source/simulator/datamodel.html#pymodbus.constants.DataType)
-	RETURN: recieved value from register
+ - get_64bit_register(client, starting_address, data_type)<br>
+	-> client -- pymodbus client object<br>
+	-> starting_address -- physical address of the first register in the set of 4 required<br>
+	-> data_type -- The pymodbus constant for the register datatype (https://pymodbus.readthedocs.io/en/latest/source/simulator/datamodel.html#pymodbus.constants.DataType)<br>
+	RETURN: recieved value from register<br>
 
- - set_64bit_register(client, starting_address, new_value, data_type)
-	-> client -- pymodbus client object
-	-> starting_address -- physical address of the first register in the set of 4 required
-	-> new_value -- new integer or float value to be saved in the 64bit Register
-	-> data_type -- The pymodbus constant for the register datatype (https://pymodbus.readthedocs.io/en/latest/source/simulator/datamodel.html#pymodbus.constants.DataType)
-	RETURN: boolean 1 if successful write, 0 if failed write
+ - set_64bit_register(client, starting_address, new_value, data_type)<br>
+	-> client -- pymodbus client object<br>
+	-> starting_address -- physical address of the first register in the set of 4 required<br>
+	-> new_value -- new integer or float value to be saved in the 64bit Register<br>
+	-> data_type -- The pymodbus constant for the register datatype (https://pymodbus.readthedocs.io/en/latest/source/simulator/datamodel.html#pymodbus.constants.DataType)<br>
+	RETURN: boolean 1 if successful write, 0 if failed write<br>
 
- - get_32bit_register(client, starting_address, data_type)
-	-> client -- pymodbus client object
-	-> starting_address -- physical address of the first register in the set of 4 required
-	-> data_type -- The pymodbus constant for the register datatype (https://pymodbus.readthedocs.io/en/latest/source/simulator/datamodel.html#pymodbus.constants.DataType)
-	RETURN: recieved value from register
+ - get_32bit_register(client, starting_address, data_type)<br>
+	-> client -- pymodbus client object<br>
+	-> starting_address -- physical address of the first register in the set of 4 required<br>
+	-> data_type -- The pymodbus constant for the register datatype (https://pymodbus.readthedocs.io/en/latest/source/simulator/datamodel.html#pymodbus.constants.DataType)<br>
+	RETURN: recieved value from register<br>
 
-- set_32bit_register(client, starting_address, new_value, data_type)
-	-> client -- pymodbus client object
-	-> starting_address -- physical address of the first register in the set of 4 required
-	-> new_value -- new integer or float value to be saved in the 32bit Register
-	-> data_type -- The pymodbus constant for the register datatype (https://pymodbus.readthedocs.io/en/latest/source/simulator/datamodel.html#pymodbus.constants.DataType)
-	RETURN: boolean 1 if successful write, 0 if failed write
+- set_32bit_register(client, starting_address, new_value, data_type)<br>
+	-> client -- pymodbus client object<br>
+	-> starting_address -- physical address of the first register in the set of 4 required<br>
+	-> new_value -- new integer or float value to be saved in the 32bit Register<br>
+	-> data_type -- The pymodbus constant for the register datatype (https://pymodbus.readthedocs.io/en/latest/source/simulator/datamodel.html#pymodbus.constants.DataType)<br>
+	RETURN: boolean 1 if successful write, 0 if failed write<br>
 
- - get_16bit_register(client, starting_address, data_type)
-	-> client -- pymodbus client object
-	-> starting_address -- physical address of the first register in the set of 4 required
-	-> data_type -- The pymodbus constant for the register datatype (https://pymodbus.readthedocs.io/en/latest/source/simulator/datamodel.html#pymodbus.constants.DataType)
-	RETURN: recieved value from register
+ - get_16bit_register(client, starting_address, data_type)<br>
+	-> client -- pymodbus client object<br>
+	-> starting_address -- physical address of the first register in the set of 4 required<br>
+	-> data_type -- The pymodbus constant for the register datatype (https://pymodbus.readthedocs.io/en/latest/source/simulator/datamodel.html#pymodbus.constants.DataType)<br>
+	RETURN: recieved value from register<br>
 
-- set_16bit_register(client, starting_address, new_value, data_type)
-	-> client -- pymodbus client object
-	-> starting_address -- physical address of the first register in the set of 4 required
-	-> new_value -- new integer or float value to be saved in the 16bit Register
-	-> data_type -- The pymodbus constant for the register datatype (https://pymodbus.readthedocs.io/en/latest/source/simulator/datamodel.html#pymodbus.constants.DataType)
-	RETURN: boolean 1 if successful write, 0 if failed write
+- set_16bit_register(client, starting_address, new_value, data_type)<br>
+	-> client -- pymodbus client object<br>
+	-> starting_address -- physical address of the first register in the set of 4 required<br>
+	-> new_value -- new integer or float value to be saved in the 16bit Register<br>
+	-> data_type -- The pymodbus constant for the register datatype (https://pymodbus.readthedocs.io/en/latest/source/simulator/datamodel.html#pymodbus.constants.DataType)<br>
+	RETURN: boolean 1 if successful write, 0 if failed write<br>
  
