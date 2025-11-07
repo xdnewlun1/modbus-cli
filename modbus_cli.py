@@ -2,6 +2,108 @@ import argparse
 from pymodbus.client import ModbusTcpClient
 import struct
 
+"""
+ ------------- HELPER FUNCTIONS -------------
+
+ - number_to_two_16bit(number, data_type, client)
+	-> number -- number to convert to 16bit format
+	-> data_type -- datatype constant from pymodbus the number value should be (https://pymodbus.readthedocs.io/en/latest/source/simulator/datamodel.html#pymodbus.constants.DataType)
+	-> client -- pymodbus client object (only needed to access data_type constants)
+	RETURN: [high_bits, low_bits]; list with highest 16bits first, and lowest 16bits last
+
+ - number_to_four_16bit(number, data_type, client)
+	-> number -- number to conver to 16bit format
+	-> data_type -- datatype constant from pymodbus the number value should be (https://pymodbus.readthedocs.io/en/latest/source/simulator/datamodel.html#pymodbus.constants.DataType)
+	-> client -- pymodbus client object (only needed to access data_type constants)
+	RETURN: [part1, part2, part3, part4]; list with highest 16bits first, and lowest 16bits last
+"""
+
+#Convert a 32bit number into two 16bit numbers
+#To send to the individual registers making up a 32bit number
+def number_to_two_16bit(number, data_type, client):
+	#Check the datatype being saved to pack it correctly
+	if data_type == client.DATATYPE.FLOAT32:
+		#conver the int to a float value
+		packed_value = struct.pack('>f', float(number))
+	elif data_type == client.DATATYPE.UINT32:
+		packed_value = struct.pack('>I', number)
+	elif data_type == client.DATATYPE.INT32:
+		packed_value = struct.pack('>i', number)
+
+	#get the high, and low values and return to calling function
+	high_bits, low_bits = struct.unpack('>HH', packed_value)
+	return [high_bits, low_bits]
+
+#Convert a 64bit number into four 16bit numbers
+#To send to the individual registers making up a 64 bit number
+def number_to_four_16bit(number, data_type, client):
+	if data_type == client.DATATYPE.FLOAT64:
+		#Convert the int to a 64-bit float
+		packed_value = struct.pack('>d', float(number))
+	elif data_type == client.DATATYPE.UINT64:
+		packed_value = struct.pack('>Q', number)
+	elif data_type == client.DATATYPE.INT64:
+		packed_value = struct.pack('>q', number)
+
+	#get all the values and return to the calling function
+	part1, part2, part3, part4 = struct.unpack('>HHHH', packed_value)
+
+	return [part1, part2, part3, part4]
+
+"""
+  ------------- CLIENT FUNCTIONS  -------------
+ - get_coil(client, coil_address)
+	-> client -- pymodbus client object
+	-> coil_address -- physical address of the coil
+	RETURN: recieved value from coil
+
+ - set_coil(client, coil_address, new_value)
+	-> client -- pymodbus client object
+	-> coil_address -- physical address of the coil
+	-> new_value -- new binary value to write to the coil (0 or 1)
+	RETURN: boolean 1 if successful write, 0 if failed write
+
+ - get_64bit_register(client, starting_address, data_type)
+	-> client -- pymodbus client object
+	-> starting_address -- physical address of the first register in the set of 4 required
+	-> data_type -- The pymodbus constant for the register datatype (https://pymodbus.readthedocs.io/en/latest/source/simulator/datamodel.html#pymodbus.constants.DataType)
+	RETURN: recieved value from register
+
+ - set_64bit_register(client, starting_address, new_value, data_type)
+	-> client -- pymodbus client object
+	-> starting_address -- physical address of the first register in the set of 4 required
+	-> new_value -- new integer or float value to be saved in the 64bit Register
+	-> data_type -- The pymodbus constant for the register datatype (https://pymodbus.readthedocs.io/en/latest/source/simulator/datamodel.html#pymodbus.constants.DataType)
+	RETURN: boolean 1 if successful write, 0 if failed write
+
+ - get_32bit_register(client, starting_address, data_type)
+	-> client -- pymodbus client object
+	-> starting_address -- physical address of the first register in the set of 4 required
+	-> data_type -- The pymodbus constant for the register datatype (https://pymodbus.readthedocs.io/en/latest/source/simulator/datamodel.html#pymodbus.constants.DataType)
+	RETURN: recieved value from register
+
+- set_32bit_register(client, starting_address, new_value, data_type)
+	-> client -- pymodbus client object
+	-> starting_address -- physical address of the first register in the set of 4 required
+	-> new_value -- new integer or float value to be saved in the 32bit Register
+	-> data_type -- The pymodbus constant for the register datatype (https://pymodbus.readthedocs.io/en/latest/source/simulator/datamodel.html#pymodbus.constants.DataType)
+	RETURN: boolean 1 if successful write, 0 if failed write
+
+ - get_16bit_register(client, starting_address, data_type)
+	-> client -- pymodbus client object
+	-> starting_address -- physical address of the first register in the set of 4 required
+	-> data_type -- The pymodbus constant for the register datatype (https://pymodbus.readthedocs.io/en/latest/source/simulator/datamodel.html#pymodbus.constants.DataType)
+	RETURN: recieved value from register
+
+- set_16bit_register(client, starting_address, new_value, data_type)
+	-> client -- pymodbus client object
+	-> starting_address -- physical address of the first register in the set of 4 required
+	-> new_value -- new integer or float value to be saved in the 16bit Register
+	-> data_type -- The pymodbus constant for the register datatype (https://pymodbus.readthedocs.io/en/latest/source/simulator/datamodel.html#pymodbus.constants.DataType)
+	RETURN: boolean 1 if successful write, 0 if failed write
+
+"""
+
 #Get the coil value at the specified address | Given location %QX0.0-0.4 coil_address should be %QX0.coil_address
 def get_coil(client, coil_address):
 	return client.read_coils(coil_address, device_id=1).bits[0]
@@ -13,57 +115,83 @@ def set_coil(client, coil_address, new_value):
 	return not client.write_coil(coil_address, new_value, device_id=1).isError()
 
 
-#Get the float value in a register - 32bit 
-def get_32bit_register(client, starting_address):
+#Get the unsigned int value in a register - 64bit
+def get_64bit_register(client, starting_address, data_type):
+
+	#Uses the given address and reads 4 registers to get the 16bit numbers
+	result = client.read_holding_registers(address=starting_address, count=4, device_id=1)
+
+	#if there is no error then continue
+	if not result.isError():
+
+		#decode the two 16bit numbers to a big endian 64bit number
+		register_value = client.convert_from_registers(
+			result.registers,
+			data_type=data_type,
+			word_order="big"
+		)
+
+		#return the value
+		return register_value
+	else:
+		return None
+
+#Set the value of the given 64bit register
+def set_64bit_register(client, starting_address, new_value, data_type):
+	#Convert the new_value to four 16bit numbers
+	new_values = number_to_four_16bit(new_value, data_type, client)
+
+	#Get the result of the changing the first register
+	result = client.write_register(address=starting_address, value=new_values[0], device_id=1)
+
+	#Get the result of changing the second register
+	result_two = client.write_register(address=starting_address+1, value=new_values[1], device_id=1)
+
+	#Get the result of changing the third register
+	result_three = client.write_register(address=starting_address+2, value=new_values[2], device_id=1)
+
+	#Get the result of changing the fourth register
+	result_four = client.write_register(address=starting_address+3, value=new_values[3], device_id=1)
+
+	#Check that all were successful
+	return not(result.isError() and result_two.isError() and result_three.isError() and result_four.isError())
+
+
+#Get the value in a register - 32bit
+def get_32bit_register(client, starting_address, data_type):
 
 	#Uses the given address and reads 2 registers to get the 16bit numbers
 	result = client.read_holding_registers(address=starting_address, count=2, device_id=1)
 
 	#if there is no error then continue
 	if not result.isError():
-		print(result.registers)
 
 		#decode the two 16bit numbers to a big endian 32bit number
-		float_value = client.convert_from_registers(
+		register_value = client.convert_from_registers(
 			result.registers,
-			data_type=client.DATATYPE.FLOAT32,
-			word_order="little"
+			data_type=data_type,
+			word_order="big"
 		)
 
 		#return the value
-		return float_value
+		return register_value
 	else:
 		return None
 
-
-def number_to_two_16bit(number):
-	if isinstance(number, int):
-		#convert the int to a float value
-		float_value = struct.unpack('f', struct.pack('f', number))[0]
-	else:
-		float_value = number
-
-	#convert the float to two int16 values
-	int_rep = struct.unpack('!I', struct.pack('!f', float_value))[0]
-	high_bits = int_rep >> 16
-	low_bits = int_rep & 0xFFFF
-	return [low_bits, high_bits]
-
-
 #Set the float value at the given register address
-def set_32bit_register(client, starting_address, new_int_value):
+def set_32bit_register(client, starting_address, new_value, data_type):
 	#Convert the new_int_value to two 16bit numbers
-	new_values = number_to_two_16bit(new_int_value)
+	new_values = number_to_two_16bit(new_value, data_type, client)
 
 	#Get the result of the changing the first register
 	result = client.write_register(address=starting_address, value=new_values[0], device_id=1)
 
 	#Get the result of the chaning the second register
 	result_two = client.write_register(address=starting_address+1, value=new_values[1], device_id=1)
-	return not (result.isError() and result.isError())
+	return not (result.isError() and result_two.isError())
 
 #Get the value of a 16bit register from the address
-def get_16bit_register(client, address):
+def get_16bit_register(client, address, data_type):
 	#Request the encoded register value
 	result = client.read_holding_registers(address=address, count=1, device_id=1)
 
@@ -71,17 +199,17 @@ def get_16bit_register(client, address):
 		#Decode the register value if there is no error
 		int_value = client.convert_from_registers(
 			result.registers,
-			data_type=client.DATATYPE.INT16,
-			word_order="little"
+			data_type=data_type,
+			word_order="big"
 		)
 		return int_value
 	else:
 		return None
 
 #Set the value of a 16bit register from the address
-def set_16bit_register(client, address, new_int_value):
+def set_16bit_register(client, address, new_value, data_type):
 	#Set the value and return if the result is an error
-	result = client.write_register(address=address, value=new_int_value, device_id=1)
+	result = client.write_register(address=address, value=new_value, device_id=1)
 	return not result.isError()
 
 def return_bool_val(value):
@@ -108,11 +236,16 @@ def client():
 	#Add the address value. This is required to identify the correct register/coil
 	parser.add_argument("-a", "--address", action="store", help="Target address on the ModBus Device")
 
-	#Add the register types, these are required but exclusive to not confuse the program.
-	types = parser.add_mutually_exclusive_group(required=True)
-	types.add_argument("-i", "--integer", action="store_true", help="Select a 16bit Integer as the target at the address")
-	types.add_argument("-f", "--float", action="store_true", help="Select a 32bit Float as the target at the address")
-	types.add_argument("-c", "--coil", action="store_true", help="Select a coil as the target at the address")
+	#Add the argument for register vs Coil
+	reg_vs_coil = parser.add_mutually_exclusive_group(required=True)
+	reg_vs_coil.add_argument("--register", action="store_true", help="Select a Register as the Target")
+	reg_vs_coil.add_argument("-c", "--coil", action="store_true", help="Select a Coil as the Target")
+
+	#Add the register sizes, these are required but exclusive to not confuse the program.
+	parser.add_argument("-s", "--size", type=int, choices=[16, 32, 64], help="The Register Size to read")
+
+	#Add the Data Type Request (FLOAT, INT, UINT)
+	parser.add_argument("-d", "--datatype", choices=["FLOAT", "INT", "UINT"], help="Choose a Data Type to get")
 
 	#Add the value option, this is only necessary if doing a write operation.
 	parser.add_argument("-v", "--value", action="store", help="The new value to store at the given address")
@@ -134,18 +267,33 @@ def client():
 		parser.error("-c requires -v is only 1 (true) or 0 (false)")
 
 	#If writing and the target is a float, then confirm that the given value can be converted to a float
-	if args.write and args.float:
+	if args.write and args.datatype == "FLOAT":
 		try:
 			float(args.value)
 		except ValueError:
 			parser.error("-v value is not a valid float")
 
 	#If writing and the target is an integer, then confirm that the given value can be converted to an int
-	if args.write and args.integer:
+	if args.write and args.datatype == "INT":
 		try:
 			int(args.value)
 		except ValueError:
 			parser.error("-v value is not a valid integer")
+
+	if args.write and args.datatype == "UINT":
+		try:
+			tmp = int(args.value)
+			if tmp < 0:
+				raise ValueError
+		except ValueError:
+			parser.error("-v value is not a valid unsigned integer")
+
+	#If selecting a register make sure the size is selected; If selecting a coil then size is not necessary
+	if args.register and args.size is None:
+		parser.error("--register requires --size argument")
+
+	if args.coil and not (args.size is None):
+		parser.error("--coil does not utilize --size argument")
 
 	#Connect to Modbus TCP Server on PLC
 	client = ModbusTcpClient(f"{args.ip}",port=int(args.port))
@@ -175,13 +323,59 @@ def client():
 			else:
 				print(f"Error: Unable to set value")
 
+	#Logic for it --size is 64
+	if args.size == 64:
+		data_type = None
+		#Get Data Type to Pass
+		if args.datatype == 'FLOAT':
+			data_type = client.DATATYPE.FLOAT64
+		elif args.datatype == 'INT':
+			data_type = client.DATATYPE.INT64
+		elif args.datatype == 'UINT':
+			data_type = client.DATATYPE.UINT64
 
-	#Logic for if -f is selection
-	if args.float:
 		#Check if reading
 		if args.read:
 			#Do the read operation
-			operation = get_32bit_register(client, int(args.address))
+			operation = get_64bit_register(client, int(args.address), data_type)
+			#Confirm the read was successful, and output the results. If the read failed then alert the user
+			if operation != None:
+				print(f"Success: {args.ip}:{args.port} Register {args.address}-{int(args.address)+3} = {operation}")
+			else:
+				print(f"Error: Reading {args.ip}:{args.port} Register {args.address}")
+
+		if args.write:
+			#Get the origianl value before doing the write
+			old_val = get_64bit_register(client, int(args.address), data_type)
+			#Conver given value to correct datatype
+			new_val = ""
+			if args.datatype == "FLOAT":
+				new_val = float(args.value)
+			elif args.datatype in ["UINT", "INT"]:
+				new_val = int(args.value)
+			#Complete the write operation
+			operation = set_64bit_register(client, int(args.address), new_val, data_type)
+			#If successful let the user know of the change, if unsuccessful then alert them
+			#Read the register to ensure user sees value register actually holds
+			read_new_val = get_64bit_register(client, int(args.address), data_type)
+			if operation:
+				print(f"Success: {args.ip}:{args.port} Register {args.address}-{int(args.address)+3} change from {old_val} to {read_new_val}")
+
+	#Logic for if --size is 32
+	if args.size == 32:
+		data_type = None
+		#Get Data Type to Pass
+		if args.datatype == 'FLOAT':
+			data_type = client.DATATYPE.FLOAT32
+		elif args.datatype == 'INT':
+			data_type = client.DATATYPE.INT32
+		elif args.datatype == 'UINT':
+			data_type = client.DATATYPE.UINT32
+
+		#Check if reading
+		if args.read:
+			#Do the read operation
+			operation = get_32bit_register(client, int(args.address), data_type)
 			#Confirm the read was successful, and output the results. If the read failed then alert the user
 			if operation != None:
 				print(f"Success: {args.ip}:{args.port} Register {args.address}-{int(args.address)+1} = {operation}")
@@ -191,22 +385,39 @@ def client():
 		#Check if writing
 		if args.write:
 			#Get the original value before doing the write
-			old_val = get_32bit_register(client, int(args.address))
+			old_val = get_32bit_register(client, int(args.address), data_type)
+			#Convert given value to correct datatype
+			new_val = ""
+			if args.datatype == "FLOAT":
+				new_val = float(args.value)
+			elif args.datatype in ["UINT", "INT"]:
+				new_val = int(args.value)
 			#Complete the write operation
-			operation = set_32bit_register(client, int(args.address), float(args.value))
+			operation = set_32bit_register(client, int(args.address), new_val, data_type)
 			#If successful let the user know of the change, if unsuccessful then alert them
+			#Read the register to ensure user sees value register actually holds
+			read_new_val = get_32bit_register(client, int(args.address), data_type)
 			if operation:
 				print(f"Success: {args.ip}:{args.port} Register {args.address}-{int(args.address)+1} changed from {old_val} to {args.value}")
 			else:
 				print(f"Error: Unable to set value")
 
 
-	#Logic for if -i is selection
-	if args.integer:
+	#Logic for if --size is 16
+	if args.size == 16:
+		data_type = None
+		#Get Data Type to Pass
+		if args.datatype == "FLOAT":
+			data_type = client.DATATYPE.FLOAT32
+		elif args.datatype == "INT":
+			data_type = client.DATATYPE.INT32
+		elif args.datatype == "UINT":
+			data_type = client.DATATYPE.UINT32
+
 		#Check if reading
 		if args.read:
 			#Do the read operation
-			operation = get_16bit_register(client, int(args.address))
+			operation = get_16bit_register(client, int(args.address), data_type)
 			#If the read was successful then let the user know, otherwise throw an error
 			if operation != None:
 				print(f"{args.ip}:{args.port} Register {args.address} = {operation}")
@@ -216,10 +427,20 @@ def client():
 		#Check if writing
 		if args.write:
 			#Get the original value before doing the write
-			old_val = get_16bit_register(client, int(args.address))
+			old_val = get_16bit_register(client, int(args.address), data_type)
+
+			#Convert given value to correct datatype
+			new_val = ""
+			if args.datatype == "FLOAT":
+				new_val = float(args.value)
+			elif args.datatype in ["UINT", "INT"]:
+				new_val = int(args.value)
+
 			#Complete the write operation
-			operation = set_16bit_register(client, int(args.address), int(args.value))
+			operation = set_16bit_register(client, int(args.address), int(args.value), data_type)
 			#If successful let the user know of the change, fi unsuccessful then alert them.
+			#Read the register to ensure user sees value register actually holds
+			read_new_val = get_16bit_register(client, int(args.address), data_type)
 			if operation:
 				print(f"Success: {args.ip}:{args.port} Register {args.address} changed from {old_val} to {args.value}")
 			else:
