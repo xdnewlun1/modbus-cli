@@ -37,7 +37,7 @@ This only applies for OpenPLC Emulation, as that is my test environment.
 | Coil             | %QX0.0           | 0              | QX0.1 -> 1; QX0.2 -> 2   |
 | Register (16bit) | %MW0             | 1024           | MW1 -> 1025; MW2 -> 1026 |
 | Register (32bit) | %MD0             | 2048           | MD1 -> 2050; MD2 -> 2025 |
-| Register (64bit) | %ML0             | 4096           | ML1 -> 4050; ML2 -> 4054 |
+| Register (64bit) | %ML0             | 4096           | ML1 -> 4100; ML2 -> 4104 |
 
 ## Examples
 ### Reading from a coil
