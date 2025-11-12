@@ -407,8 +407,7 @@ def client():
 	if args.size == 16:
 		data_type = None
 		#Get Data Type to Pass
-		if args.datatype == "FLOn*
-❯ python3 modbus_cli.py --ip 10.0.133.143 --register --write --sAT":
+		if args.datatype == "FLOAT":
 			data_type = client.DATATYPE.FLOAT16
 		elif args.datatype == "INT":
 			data_type = client.DATATYPE.INT16
