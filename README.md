@@ -26,6 +26,7 @@ options:
   -d, --datatype {FLOAT,INT,UINT}
                         Choose a Data Type to get
   -v, --value VALUE     The new value to store at the given address
+  --discrete            Reads from Discrete Input Coils
 ```
 
 ## Determining Register/Coil Address
@@ -43,6 +44,10 @@ This only applies for OpenPLC Emulation, as that is my test environment.
 ### Reading from a coil
 `python3 ./modbus-cli.py --read --ip [modbus_ip] --port 502 --coil -a [coil-address] -c`<br>
 This command will connect to the modbus device at {modbus_ip} and read the coil at the given address.
+
+### Reading from a discrete coil
+`python3 ./modbus-cli.py --read --discrete --ip [modbus_ip] --port 502 --coil -a [coil-address] -c`<br>
+This command will connect to the modbus device at {modbus_ip} and read the discrete coil at the given address.
 
 ### Writing to a coil
 `python3 ./modbus-cli.py --write --ip [modbus_ip] --port 502 --coil -a [coil-address] -v [new_value]`<br>
@@ -86,53 +91,67 @@ This command will connect to the modbus device at {modbus_ip} and read the value
 	RETURN: [part1, part2, part3, part4]; list with highest 16bits first, and lowest 16bits last<br>
 
 ### Client Functions
- - get_coil(client, coil_address)<br>
+ - get_coil(client, coil_address, device_id)<br>
 	-> client -- pymodbus client object<br>
 	-> coil_address -- physical address of the coil<br>
+	-> device_id -- set the modbus slave_id of the client<br>
 	RETURN: recieved value from coil<br>
+	
+ - get_discrete_coil(client, coil_address, device_id)<br>
+	-> client -- pymodbus client object<br>
+	-> coil_address -- physical address of the coil<br>
+	-> device_id -- set the modbus slave_id of the client<br>
+	RETURN: Recieved value from the discrete coil<br>
 
- - set_coil(client, coil_address, new_value)<br>
+ - set_coil(client, coil_address, new_value, device_id)<br>
 	-> client -- pymodbus client object<br>
 	-> coil_address -- physical address of the coil<br>
 	-> new_value -- new binary value to write to the coil (0 or 1)<br>
+	-> device_id -- set the modbus slave_id of the client<br>
 	RETURN: boolean 1 if successful write, 0 if failed write<br>
 
- - get_64bit_register(client, starting_address, data_type)<br>
+ - get_64bit_register(client, starting_address, data_type, device_id)<br>
 	-> client -- pymodbus client object<br>
 	-> starting_address -- physical address of the first register in the set of 4 required<br>
 	-> data_type -- The pymodbus constant for the register datatype (https://pymodbus.readthedocs.io/en/latest/source/simulator/datamodel.html#pymodbus.constants.DataType)<br>
+	-> device_id -- set the modbus slave_id of the client<br>
 	RETURN: recieved value from register<br>
 
- - set_64bit_register(client, starting_address, new_value, data_type)<br>
+ - set_64bit_register(client, starting_address, new_value, data_type, device_id)<br>
 	-> client -- pymodbus client object<br>
 	-> starting_address -- physical address of the first register in the set of 4 required<br>
 	-> new_value -- new integer or float value to be saved in the 64bit Register<br>
 	-> data_type -- The pymodbus constant for the register datatype (https://pymodbus.readthedocs.io/en/latest/source/simulator/datamodel.html#pymodbus.constants.DataType)<br>
+	-> device_id -- set the modbus slave_id of the client<br>
 	RETURN: boolean 1 if successful write, 0 if failed write<br>
 
- - get_32bit_register(client, starting_address, data_type)<br>
+ - get_32bit_register(client, starting_address, data_type, device_id)<br>
 	-> client -- pymodbus client object<br>
 	-> starting_address -- physical address of the first register in the set of 4 required<br>
 	-> data_type -- The pymodbus constant for the register datatype (https://pymodbus.readthedocs.io/en/latest/source/simulator/datamodel.html#pymodbus.constants.DataType)<br>
+	-> device_id -- set the modbus slave_id of the client<br>
 	RETURN: recieved value from register<br>
 
-- set_32bit_register(client, starting_address, new_value, data_type)<br>
+- set_32bit_register(client, starting_address, new_value, data_type, device_id)<br>
 	-> client -- pymodbus client object<br>
 	-> starting_address -- physical address of the first register in the set of 4 required<br>
 	-> new_value -- new integer or float value to be saved in the 32bit Register<br>
 	-> data_type -- The pymodbus constant for the register datatype (https://pymodbus.readthedocs.io/en/latest/source/simulator/datamodel.html#pymodbus.constants.DataType)<br>
+	-> device_id -- set the modbus slave_id of the client<br>
 	RETURN: boolean 1 if successful write, 0 if failed write<br>
 
- - get_16bit_register(client, starting_address, data_type)<br>
+ - get_16bit_register(client, starting_address, data_type, device_id)<br>
 	-> client -- pymodbus client object<br>
 	-> starting_address -- physical address of the first register in the set of 4 required<br>
 	-> data_type -- The pymodbus constant for the register datatype (https://pymodbus.readthedocs.io/en/latest/source/simulator/datamodel.html#pymodbus.constants.DataType)<br>
+	-> device_id -- set the modbus slave_id of the client<br>
 	RETURN: recieved value from register<br>
 
-- set_16bit_register(client, starting_address, new_value, data_type)<br>
+- set_16bit_register(client, starting_address, new_value, data_type, device_id)<br>
 	-> client -- pymodbus client object<br>
 	-> starting_address -- physical address of the first register in the set of 4 required<br>
 	-> new_value -- new integer or float value to be saved in the 16bit Register<br>
 	-> data_type -- The pymodbus constant for the register datatype (https://pymodbus.readthedocs.io/en/latest/source/simulator/datamodel.html#pymodbus.constants.DataType)<br>
+	-> device_id -- set the modbus slave_id of the client<br>
 	RETURN: boolean 1 if successful write, 0 if failed write<br>
  
